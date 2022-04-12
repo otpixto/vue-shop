@@ -1,7 +1,13 @@
 <template>
-  <div v-for="category in store.getters.categories" :key="category">
+
+  <h1 class="align-self-center">Интернет магазин</h1>
+
+  <div class="row">
+    <div class="col-md-6 category-block" v-for="category in store.getters.categories" :key="category">
       {{ category.categoryName }}
+    </div>
   </div>
+
 
 <!--  <hr>-->
 
@@ -117,4 +123,13 @@ store.dispatch('getNames');
 
 <style scoped>
 
+.category-block {
+  padding: 5px;
+  border: 1px solid gray;
+  border-radius: 5px 5px 0 5px;
+}
+
+h1 {
+  text-align:center;
+}
 </style>

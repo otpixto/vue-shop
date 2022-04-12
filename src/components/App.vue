@@ -1,9 +1,6 @@
 <template>
   <div id="app">
-    <h1>Интернет магазин</h1>
     <ProductList/>
-    <hr>
-
   </div>
 </template>
 
