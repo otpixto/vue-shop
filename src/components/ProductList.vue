@@ -1,7 +1,16 @@
 <template>
-  <div v-for="product in store.getters.products" :key="product">
-{{product}}
+  <div v-for="category in store.getters.categories" :key="category">
+      {{ category.categoryName }}
   </div>
+
+<!--  <hr>-->
+
+<!--  <div v-for="name in store.getters.names" :key="name">-->
+<!--    {{ name }}-->
+<!--    <div v-for="item in name" :key="item">-->
+<!--      {{ item }}-->
+<!--    </div>-->
+<!--  </div>-->
 </template>
 
 <script setup>
@@ -13,15 +22,67 @@ const store = createStore({
   state () {
     return {
       names: [],
-      products: {}
+      products: {},
+      categories: [],
+      goods: []
     }
   },
   getters: {
+    categories: state => {
+      let returnData = [];
+      let namesValue = state.names;
+
+      for(let categoryId in namesValue) {
+        returnData.push({
+          categoryId: Number(categoryId),
+          categoryName: namesValue[categoryId]['G'],
+        })
+      }
+      console.log(returnData);
+
+      return returnData;
+    },
     products: state => {
+      //let returnData = [];
+      let productsValue = state.products.value;
+      for(let index in productsValue) {
+        console.log(productsValue[index]['G']);
+      }
+
       return state.products;
     },
     names: state => {
-      return state.names;
+      let returnData = [];
+      let namesValue = state.names;
+
+      for(let index in namesValue) {
+
+        let goodsList = namesValue[index]['B'];
+
+        let goodsArray = []
+        for(let goodId in goodsList) {
+          let numericGoodId = Number(goodId);
+          let price = 0;
+
+          state.products.value.filter((item) => {
+            if (numericGoodId === item["T"]) {
+              price = item['C'];
+            }
+          });
+
+          goodsArray.push({
+            id: goodId,
+            name: goodsList[goodId]['N'],
+            price: price
+          });
+        }
+
+        returnData.push({
+          categoryName: namesValue[index]['G'],
+          goods: goodsArray,
+        })
+      }
+      return returnData;
     },
   },
   mutations: {
@@ -51,8 +112,6 @@ const store = createStore({
 
 store.dispatch('getProducts');
 store.dispatch('getNames');
-
-console.log( store.getters.products );
 
 </script>
 
