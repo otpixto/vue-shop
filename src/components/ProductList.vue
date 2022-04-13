@@ -11,19 +11,22 @@
           </a>
           {{ category.categoryName }}
         </div>
+
+        <div class="row">
+          <table>
+            <tr>
+              <td v-for="(good, index) in category.categoryGoods" :key="good">
+                {{ good.name }} {{ index }}
+
+              </td>
+
+            </tr>
+          </table>
+        </div>
+
       </div>
     </div>
   </div>
-
-
-  <!--  <hr>-->
-
-  <!--  <div v-for="name in store.getters.names" :key="name">-->
-  <!--    {{ name }}-->
-  <!--    <div v-for="item in name" :key="item">-->
-  <!--      {{ item }}-->
-  <!--    </div>-->
-  <!--  </div>-->
 </template>
 
 <script setup>
@@ -53,14 +56,10 @@ const store = createStore({
 
         let numericCategoryId = Number(categoryId);
 
-        returnData.push({
-          categoryId: Number(categoryId),
-          categoryName: namesValue[categoryId]['G'],
-        })
-
         let categoryGoods = [];
 
         state.data.value.filter((item) => {
+
           if (numericCategoryId === item["G"]) {
 
             let numericGoodId = Number(item['T']);
@@ -70,8 +69,9 @@ const store = createStore({
             for (let nameIndex in goodsNamesList) {
 
               let nameItem = goodsNamesList[nameIndex];
+              let numericNameIndex = Number(nameIndex);
 
-              if (numericCategoryId === nameItem["G"]) {
+              if (numericGoodId === numericNameIndex) {
 
                 categoryGoods.push({
                   id: numericGoodId,
@@ -86,51 +86,17 @@ const store = createStore({
 
         });
 
-        console.log(categoryGoods);
+        if (categoryGoods.length) {
+          returnData.push({
+            categoryId: Number(categoryId),
+            categoryName: namesValue[categoryId]['G'],
+            categoryGoods: categoryGoods
+          });
+        }
       }
-
-      // for(let index in dataValue) {
-      //   console.log( dataValue[index] );
-      // }
 
       return returnData;
     },
-    // data: state => {
-    //   return state.data;
-    // },
-    // names: state => {
-    //   let returnData = [];
-    //   let namesValue = state.names;
-    //
-    //   for(let index in namesValue) {
-    //
-    //     let goodsList = namesValue[index]['B'];
-    //
-    //     let goodsArray = []
-    //     for(let goodId in goodsList) {
-    //       let numericGoodId = Number(goodId);
-    //       let price = 0;
-    //
-    //       state.products.value.filter((item) => {
-    //         if (numericGoodId === item["T"]) {
-    //           price = item['C'];
-    //         }
-    //       });
-    //
-    //       goodsArray.push({
-    //         id: goodId,
-    //         name: goodsList[goodId]['N'],
-    //         price: price
-    //       });
-    //     }
-    //
-    //     returnData.push({
-    //       categoryName: namesValue[index]['G'],
-    //       goods: goodsArray,
-    //     })
-    //   }
-    //   return returnData;
-    // },
   },
   mutations: {
     setData(state, data) {
@@ -152,14 +118,8 @@ const store = createStore({
   },
 })
 
-// const app = createApp({ 'App': App })
-
-// Install the store instance as a plugin
-// app.use(store)
-
 store.dispatch('getData');
 store.dispatch('getNames');
-
 </script>
 
 <style scoped>
@@ -181,5 +141,12 @@ h1 {
 
 .category-block-button {
   margin: 8px 3px;
+}
+
+.good-wrapper {
+  margin: 0;
+  padding: 0;
+  border-right: 1px solid gray;
+  border-bottom: 1px solid gray;
 }
 </style>
