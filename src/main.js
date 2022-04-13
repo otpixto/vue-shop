@@ -1,5 +1,9 @@
 import 'bootstrap/dist/css/bootstrap.min.css'
 import { createApp } from 'vue'
 import App from './components/App.vue'
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 
-createApp(App).mount('#app')
+
+createApp(App).
+component("font-awesome-icon", FontAwesomeIcon)
+    .mount('#app')
