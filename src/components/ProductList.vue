@@ -7,7 +7,7 @@
       <div class="category-block">
         <div class="category-block-header">
           <a class="category-block-button">
-            <font-awesome-icon icon="angle-down" />
+            <font-awesome-icon icon="angle-down"/>
           </a>
           {{ category.categoryName }}
         </div>
@@ -16,28 +16,28 @@
   </div>
 
 
-<!--  <hr>-->
+  <!--  <hr>-->
 
-<!--  <div v-for="name in store.getters.names" :key="name">-->
-<!--    {{ name }}-->
-<!--    <div v-for="item in name" :key="item">-->
-<!--      {{ item }}-->
-<!--    </div>-->
-<!--  </div>-->
+  <!--  <div v-for="name in store.getters.names" :key="name">-->
+  <!--    {{ name }}-->
+  <!--    <div v-for="item in name" :key="item">-->
+  <!--      {{ item }}-->
+  <!--    </div>-->
+  <!--  </div>-->
 </template>
 
 <script setup>
-import { createStore } from 'vuex';
+import {createStore} from 'vuex';
 import Axios from 'axios';
-import { library } from "@fortawesome/fontawesome-svg-core";
-import { faAngleDown, faAngleUp } from "@fortawesome/free-solid-svg-icons";
+import {library} from "@fortawesome/fontawesome-svg-core";
+import {faAngleDown, faAngleUp} from "@fortawesome/free-solid-svg-icons";
 
 library.add(faAngleDown);
 library.add(faAngleUp);
 
 // Create a new store instance.
 const store = createStore({
-  state () {
+  state() {
     return {
       data: [],
       names: {},
@@ -49,7 +49,7 @@ const store = createStore({
       let returnData = [];
       let namesValue = state.names;
 
-      for(let categoryId in namesValue) {
+      for (let categoryId in namesValue) {
 
         let numericCategoryId = Number(categoryId);
 
@@ -67,7 +67,7 @@ const store = createStore({
 
             let goodsNamesList = namesValue[categoryId]['B'];
 
-            for(let nameIndex in goodsNamesList) {
+            for (let nameIndex in goodsNamesList) {
 
               let nameItem = goodsNamesList[nameIndex];
 
@@ -81,12 +81,12 @@ const store = createStore({
                 });
 
               }
-            })
-
+            }
           }
+
         });
 
-        console.log( categoryGoods );
+        console.log(categoryGoods);
       }
 
       // for(let index in dataValue) {
@@ -171,13 +171,14 @@ store.dispatch('getNames');
 }
 
 h1 {
-  text-align:center;
+  text-align: center;
 }
 
 .category-block-header {
   background-color: lightblue;
   border-bottom: 1px solid gray;
 }
+
 .category-block-button {
   margin: 8px 3px;
 }
