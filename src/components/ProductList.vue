@@ -3,40 +3,74 @@
   <h1 class="align-self-center">Интернет магазин</h1>
 
   <div class="row">
-    <div class="col-md-6" v-for="category in store.getters.categoriesWithGoods" :key="category">
-      <div class="category-block">
-        <div class="category-block-header">
-          <a class="category-block-button">
-            <font-awesome-icon icon="angle-down"/>
-          </a>
-          {{ category.categoryName }}
-        </div>
-
-        <div class="row">
-          <table>
-            <tr>
-              <td v-for="(good, index) in category.categoryGoods" :key="good">
-                {{ good.name }} {{ index }}
-
-              </td>
-
-            </tr>
-          </table>
-        </div>
-
-      </div>
+    <div class="col-md-6" v-for="(category, categoryIndex) in store.getters.categoriesWithGoods" :key="category">
+      <table class="table table-bordered table-hover">
+        <tr class="category-block-header">
+          <th colspan="2">
+            {{ category.categoryName }}
+          </th>
+        </tr>
+        <tr v-for="(i, index) in Math.ceil(category.categoryGoods.length/2)" :key="index">
+          <td class="good-cell">
+            <table class="good-table">
+              <tr>
+                <td>{{ category.categoryGoods[index * 2].name }} ({{ category.categoryGoods[index * 2].leftover }})</td>
+                <td class="price-block">
+                  {{ (category.categoryGoods[index * 2].price * store.getters.exchangeRate).toFixed(2) }}
+                  <button @click="addToCart(categoryIndex, index * 2);" class="btn btn-sm btn-info">
+                    <span class="cart-text">В корзину</span>
+                  </button>
+                </td>
+              </tr>
+            </table>
+          </td>
+          <td class="good-cell" v-if="index * 2 + 1 < category.categoryGoods.length">
+            <table class="good-table">
+              <tr>
+                <td>{{ category.categoryGoods[index * 2 + 1].name }} ({{ category.categoryGoods[index * 2 + 1].leftover }})</td>
+                <td class="price-block">
+                  {{ (category.categoryGoods[index * 2 + 1].price * store.getters.exchangeRate).toFixed(2) }}
+                  <button @click="addToCart(categoryIndex, index * 2 + 1);" class="btn btn-sm btn-info">
+                    <span class="cart-text">В корзину</span>
+                  </button>
+                </td>
+              </tr>
+            </table>
+          </td>
+        </tr>
+      </table>
     </div>
   </div>
+
+  <hr>
+
+  <table class="table table-bordered table-hover" :class="[{tableSuccess: store.getters.exchangeRate >= store.getters.previousExchangeRate}]">
+    <tr>
+      <th>Наименование товара и описание</th>
+      <th>Количество</th>
+      <th>Цена</th>
+    </tr>
+    <tr v-for="cartItem in store.getters.cartItems" :key="cartItem">
+      <td>
+        {{ cartItem.name }}
+      </td>
+      <td>
+        {{ cartItem.count }}
+      </td>
+      <td>
+        {{ (cartItem.price * store.getters.exchangeRate).toFixed(2) }}
+      </td>
+    </tr>
+  </table>
+
 </template>
 
 <script setup>
 import {createStore} from 'vuex';
 import Axios from 'axios';
-import {library} from "@fortawesome/fontawesome-svg-core";
-import {faAngleDown, faAngleUp} from "@fortawesome/free-solid-svg-icons";
 
-library.add(faAngleDown);
-library.add(faAngleUp);
+const minExchangeRate = 20;
+const maxExchangeRate = 80;
 
 // Create a new store instance.
 const store = createStore({
@@ -45,9 +79,18 @@ const store = createStore({
       data: [],
       names: {},
       categoriesWithGoods: [],
+      exchangeRate: 0,
+      previousExchangeRate: 0,
+      cartItems: [],
     }
   },
   getters: {
+    exchangeRate: state => {
+      return state.exchangeRate;
+    },
+    previousExchangeRate: state => {
+      return state.previousExchangeRate;
+    },
     categoriesWithGoods: state => {
       let returnData = [];
       let namesValue = state.names;
@@ -75,7 +118,7 @@ const store = createStore({
 
                 categoryGoods.push({
                   id: numericGoodId,
-                  price: item['C'],
+                  price: (item['C'] * state.exchangeRate).toFixed(2),
                   name: nameItem['N'],
                   leftover: item['P'],
                 });
@@ -97,6 +140,9 @@ const store = createStore({
 
       return returnData;
     },
+    cartItems: state => {
+      return state.cartItems
+    }
   },
   mutations: {
     setData(state, data) {
@@ -104,6 +150,34 @@ const store = createStore({
     },
     setNames(state, data) {
       state.names = data;
+    },
+    setExchangeRate(state, data) {
+      state.exchangeRate = data;
+    },
+    setPreviousExchangeRate(state, data) {
+      state.previousExchangeRate = data;
+    },
+    addToCart(state, data) {
+      let cart = state.cartItems.find((item) => {
+        return item.id === data.id;
+      });
+
+      let cartItem = {
+        id: data.id,
+        price: data.price,
+        name: data.name,
+        count: 1
+      }
+
+      if (typeof cart === 'undefined') {
+        state.cartItems.push(cartItem);
+      } else {
+        state.cartItems.forEach((item, i) => {
+          if(item.id === data.id) {
+            state.cartItems[i].count++;
+          }
+        })
+      }
     }
   },
   actions: {
@@ -115,20 +189,27 @@ const store = createStore({
       let {data} = await Axios.get("/json/names.json");
       context.commit('setNames', data);
     },
+    getExchangeRate: (context) => {
+      context.commit('setPreviousExchangeRate', context.getters.exchangeRate);
+
+      let r = Math.random()*(maxExchangeRate-minExchangeRate) + minExchangeRate;
+      let data = Math.floor(r);
+
+      context.commit('setExchangeRate', data);
+    },
   },
 })
 
+store.dispatch('getExchangeRate');
 store.dispatch('getData');
 store.dispatch('getNames');
+
+function addToCart(categoryIndex, goodIndex) {
+  store.commit('addToCart', store.getters.categoriesWithGoods[categoryIndex].categoryGoods[goodIndex]);
+}
 </script>
 
 <style scoped>
-
-.category-block {
-  margin: 5px;
-  border: 1px solid gray;
-  border-radius: 5px 5px 0 0;
-}
 
 h1 {
   text-align: center;
@@ -136,17 +217,24 @@ h1 {
 
 .category-block-header {
   background-color: lightblue;
-  border-bottom: 1px solid gray;
 }
 
-.category-block-button {
-  margin: 8px 3px;
+.price-block {
+  background-color: antiquewhite;
+  width: 100px;
 }
 
-.good-wrapper {
-  margin: 0;
+.good-cell {
   padding: 0;
-  border-right: 1px solid gray;
-  border-bottom: 1px solid gray;
+  font-size: 12px;
+}
+
+.good-table {
+  width: 100%;
+  height: 100px;
+}
+
+.cart-text {
+  font-size: 10px;
 }
 </style>
