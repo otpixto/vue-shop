@@ -17,7 +17,7 @@
                 <td>{{ category.categoryGoods[index * 2].name }} ({{ category.categoryGoods[index * 2].leftover }})</td>
                 <td class="price-block">
                   {{ (category.categoryGoods[index * 2].price * store.getters.exchangeRate).toFixed(2) }}
-                  <button @click="addToCart(categoryIndex, index * 2);" class="btn btn-sm btn-info">
+                  <button v-if="category.categoryGoods[index * 2].leftover > 0" @click="addToCart(categoryIndex, index * 2);" class="btn btn-sm btn-info">
                     <span class="cart-text">В корзину</span>
                   </button>
                 </td>
@@ -30,7 +30,7 @@
                 <td>{{ category.categoryGoods[index * 2 + 1].name }} ({{ category.categoryGoods[index * 2 + 1].leftover }})</td>
                 <td class="price-block">
                   {{ (category.categoryGoods[index * 2 + 1].price * store.getters.exchangeRate).toFixed(2) }}
-                  <button @click="addToCart(categoryIndex, index * 2 + 1);" class="btn btn-sm btn-info">
+                  <button v-if="category.categoryGoods[index * 2 + 1].leftover > 0" @click="addToCart(categoryIndex, index * 2 + 1);" class="btn btn-sm btn-info">
                     <span class="cart-text">В корзину</span>
                   </button>
                 </td>
@@ -42,26 +42,43 @@
     </div>
   </div>
 
-  <hr>
+  Курс доллара: {{ store.getters.exchangeRate }}
 
-  <table class="table table-bordered table-hover" :class="[{tableSuccess: store.getters.exchangeRate >= store.getters.previousExchangeRate}]">
+  <table class="table table-bordered table-hover"
+         :class="{
+          'table-success': store.getters.isExchangeRateIncreased,
+          'table-danger': store.getters.isExchangeRateDecreased
+         }">
     <tr>
       <th>Наименование товара и описание</th>
       <th>Количество</th>
       <th>Цена</th>
+      <th></th>
     </tr>
     <tr v-for="cartItem in store.getters.cartItems" :key="cartItem">
       <td>
         {{ cartItem.name }}
       </td>
       <td>
-        {{ cartItem.count }}
+        <b>{{ cartItem.count }}</b> шт.
       </td>
       <td>
-        {{ (cartItem.price * store.getters.exchangeRate).toFixed(2) }}
+        <b>{{ (cartItem.price * store.getters.exchangeRate).toFixed(2) }} руб.</b> / шт.
+      </td>
+      <td>
+        <button @click="removeFromCart(cartItem.categoryIndex, cartItem.goodIndex);" class="btn btn-danger">
+          Удалить
+        </button>
       </td>
     </tr>
   </table>
+
+  <div class="row" v-if="store.getters.totalCartAmount">
+    <div class="col-md-12 offset-md-8">
+      Общая стоимость: <span class="orange-text">{{ (store.getters.totalCartAmount * store.getters.exchangeRate).toFixed(2) }} руб.</span>
+    </div>
+  </div>
+
 
 </template>
 
@@ -82,6 +99,7 @@ const store = createStore({
       exchangeRate: 0,
       previousExchangeRate: 0,
       cartItems: [],
+      totalCartAmount: 0
     }
   },
   getters: {
@@ -90,6 +108,15 @@ const store = createStore({
     },
     previousExchangeRate: state => {
       return state.previousExchangeRate;
+    },
+    isExchangeRateIncreased: state => {
+      return state.exchangeRate >= store.getters.previousExchangeRate && state.previousExchangeRate > 0;
+    },
+    isExchangeRateDecreased: state => {
+      return state.exchangeRate < state.previousExchangeRate;
+    },
+    totalCartAmount: state => {
+      return state.totalCartAmount;
     },
     categoriesWithGoods: state => {
       let returnData = [];
@@ -118,7 +145,7 @@ const store = createStore({
 
                 categoryGoods.push({
                   id: numericGoodId,
-                  price: (item['C'] * state.exchangeRate).toFixed(2),
+                  price: item['C'],
                   name: nameItem['N'],
                   leftover: item['P'],
                 });
@@ -158,27 +185,43 @@ const store = createStore({
       state.previousExchangeRate = data;
     },
     addToCart(state, data) {
+
+      let good = data.good;
+
       let cart = state.cartItems.find((item) => {
-        return item.id === data.id;
+        return item.id === good.id;
       });
 
       let cartItem = {
-        id: data.id,
-        price: data.price,
-        name: data.name,
-        count: 1
+        id: good.id,
+        price: good.price,
+        name: good.name,
+        count: 1,
+        categoryIndex: data.categoryIndex,
+        goodIndex: data.goodIndex,
       }
 
       if (typeof cart === 'undefined') {
         state.cartItems.push(cartItem);
+        state.totalCartAmount += Number(cartItem.price);
       } else {
         state.cartItems.forEach((item, i) => {
-          if(item.id === data.id) {
+          if(item.id === good.id) {
             state.cartItems[i].count++;
+            state.totalCartAmount += Number(state.cartItems[i].price);
           }
         })
       }
-    }
+    },
+    removeFromCart(state, data) {
+
+        state.cartItems.forEach((item, i) => {
+          if(item.id === data.id) {
+            state.totalCartAmount -= Number(state.cartItems[i].price) * state.cartItems[i].count;
+            state.cartItems.splice(i, 1);
+          }
+        })
+      }
   },
   actions: {
     getData: async (context) => {
@@ -198,14 +241,28 @@ const store = createStore({
       context.commit('setExchangeRate', data);
     },
   },
-})
+});
 
-store.dispatch('getExchangeRate');
-store.dispatch('getData');
-store.dispatch('getNames');
+intervalCallback();
+setInterval(intervalCallback, 15000);
+
+function intervalCallback()
+{
+  store.dispatch('getExchangeRate');
+  store.dispatch('getData');
+  store.dispatch('getNames');
+}
 
 function addToCart(categoryIndex, goodIndex) {
-  store.commit('addToCart', store.getters.categoriesWithGoods[categoryIndex].categoryGoods[goodIndex]);
+  store.commit('addToCart', {
+    good: store.getters.categoriesWithGoods[categoryIndex].categoryGoods[goodIndex],
+    categoryIndex: categoryIndex,
+    goodIndex: goodIndex
+  });
+}
+
+function removeFromCart(categoryIndex, goodIndex) {
+  store.commit('removeFromCart', store.getters.categoriesWithGoods[categoryIndex].categoryGoods[goodIndex]);
 }
 </script>
 
@@ -236,5 +293,10 @@ h1 {
 
 .cart-text {
   font-size: 10px;
+}
+
+.orange-text {
+  font-size: 16px;
+  color: orange;
 }
 </style>
